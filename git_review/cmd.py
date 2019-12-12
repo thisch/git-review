@@ -1397,7 +1397,8 @@ def _main():
     topic_arg_group.add_argument("-T", "--no-topic", dest="notopic",
                                  action="store_true",
                                  help="No topic except if explicitly provided")
-
+    parser.add_argument("-a", "--assignee", dest="assignee",
+                        help="Set assignee for uploaded patch sets.")
     parser.add_argument("--reviewers", nargs="+",
                         help="Add reviewers to uploaded patch sets.")
     parser.add_argument("-D", "--draft", dest="draft", action="store_true",
@@ -1643,6 +1644,7 @@ def _main():
         if options.custom_script:
             run_custom_script("draft")
 
+    # https://gerrit-review.googlesource.com/Documentation/user-upload.html#push_create
     cmd = ("git push --no-follow-tags %s HEAD:refs/%s/%s" %
            (remote, ref, branch))
     push_options = []
@@ -1653,6 +1655,16 @@ def _main():
 
     if topic and topic != branch:
         push_options.append("topic=%s" % topic)
+
+    if options.assignee:
+        if re.search(r'\s', options.assignee):
+            raise MalformedInput(
+                "Whitespace not allowed in assigned: "
+                "'%s'" % options.assignee)
+        # FIXME this does not work because there is no push option for
+        # assignees (see
+        # https://bugs.chromium.org/p/gerrit/issues/detail?id=6154 )
+        push_options += ["a=%s" % options.assignee]
 
     if options.reviewers:
         assert_valid_reviewers(options.reviewers)
